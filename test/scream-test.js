@@ -41,18 +41,18 @@ describe('Vaults', function () {
   const treasuryAddress = '0xeb9C9b785aA7818B2EBC8f9842926c4B9f707e4B';
 
   const usdcAddress = '0x7F5c764cBc14f9669B88837ca1490cCa17c31607';
-  const soWantAddress = '0x5569b83de187375d43FBd747598bfe64fC8f6436';
-  const wantAddress = '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1';
+  const soWantAddress = '0xd14451E0Fa44B18f08aeB1E4a4d092B823CaCa68';
+  const wantAddress = '0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9';
 
-  const wantHolder = '0x555187752Ef6d73758862B5d364AAB362c996d0e';
-  const wantWhaleAddress = '0x441b02540B16B22D64A5Be8d3A4Dcf9a4E0EFA98';
+  const wantHolder = '0xa5f7a39E55D7878bC5bd754eE5d6BD7a7662355b';
+  const wantWhaleAddress = '0x29028c6a05e10588136994F10a79503B2a0Ace44';
   const strategistAddress = '0x1A20D7A31e5B3Bc5f02c8A146EF6f394502a10c4';
 
   const superAdminAddress = '0x9BC776dBb134Ef9D7014dB1823Cd755Ac5015203';
   const adminAddress = '0xeb9C9b785aA7818B2EBC8f9842926c4B9f707e4B';
   const guardianAddress = '0xb0C9D5851deF8A2Aac4A23031CA2610f8C3483F9';
 
-  const targetLTVText = '0.78';
+  const targetLTVText = '0.58';
   const targetLtv = ethers.utils.parseEther(targetLTVText);
 
   beforeEach(async function () {
@@ -273,7 +273,7 @@ describe('Vaults', function () {
     });
 
     it('should trigger leveraging on withdraw when LTV is too low', async function () {
-      const startingLTV = toWantUnit('0.6');
+      const startingLTV = toWantUnit('0.4');
       await strategy.setTargetLtv(startingLTV);
       const depositAmount = toWantUnit('100');
 
@@ -282,7 +282,7 @@ describe('Vaults', function () {
       console.log(`ltvBefore: ${ltvBefore}`);
       const allowedLTVDrift = toWantUnit('0.01');
       expect(ltvBefore).to.be.closeTo(startingLTV, allowedLTVDrift);
-      const newLTV = toWantUnit('0.7');
+      const newLTV = toWantUnit('0.5');
       await strategy.setTargetLtv(newLTV);
       const smallWithdrawAmount = toWantUnit('1');
       const userBalance = await want.balanceOf(selfAddress);
@@ -301,7 +301,7 @@ describe('Vaults', function () {
     });
 
     it('should trigger deleveraging on withdraw when LTV is too high', async function () {
-      const startingLTV = toWantUnit('0.7');
+      const startingLTV = toWantUnit('0.5');
       await strategy.setTargetLtv(startingLTV);
       const depositAmount = toWantUnit('100');
 
@@ -329,7 +329,7 @@ describe('Vaults', function () {
     });
 
     it('should not change leverage on withdraw when still in the allowed LTV', async function () {
-      const startingLTV = toWantUnit('0.7');
+      const startingLTV = toWantUnit('0.5');
       await strategy.setTargetLtv(startingLTV);
       const depositAmount = toWantUnit('100');
 
