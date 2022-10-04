@@ -1,6 +1,7 @@
 const hre = require('hardhat');
 const chai = require('chai');
 const { solidity } = require('ethereum-waffle');
+const { parseEther } = require('ethers/lib/utils');
 chai.use(solidity);
 const { expect } = chai;
 
@@ -41,18 +42,18 @@ describe('Vaults', function () {
   const treasuryAddress = '0xeb9C9b785aA7818B2EBC8f9842926c4B9f707e4B';
 
   const usdcAddress = '0x7F5c764cBc14f9669B88837ca1490cCa17c31607';
-  const soWantAddress = '0xf7B5965f5C117Eb1B5450187c9DcFccc3C317e8E';
-  const wantAddress = '0x4200000000000000000000000000000000000006';
+  const soWantAddress = '0x8cD6b19A07d754bF36AdEEE79EDF4F2134a8F571';
+  const wantAddress = '0x4200000000000000000000000000000000000042';
 
-  const wantHolder = '0x0a61e7D0fC8190E8b6B8D206E38B96e3bb7e7949';
-  const wantWhaleAddress = '0x00dEe1F836998bcc736022f314dF906588d44808';
+  const wantHolder = '0x9E26e1B35164aFB1332592AF393edf5F2A2C7F51';
+  const wantWhaleAddress = '0xF977814e90dA44bFA03b6295A0616a897441aceC';
   const strategistAddress = '0x1A20D7A31e5B3Bc5f02c8A146EF6f394502a10c4';
 
   const superAdminAddress = '0x9BC776dBb134Ef9D7014dB1823Cd755Ac5015203';
   const adminAddress = '0xeb9C9b785aA7818B2EBC8f9842926c4B9f707e4B';
   const guardianAddress = '0xb0C9D5851deF8A2Aac4A23031CA2610f8C3483F9';
 
-  const targetLTVText = '0.73';
+  const targetLTVText = '0.63';
   const targetLtv = ethers.utils.parseEther(targetLTVText);
 
   beforeEach(async function () {
@@ -102,7 +103,7 @@ describe('Vaults', function () {
     console.log('treasury');
     want = await Want.attach(wantAddress);
     console.log('want attached');
-    vault = await Vault.deploy(wantAddress, 'DAI Sonne Crypt', 'rf-soDAI', 0, ethers.constants.MaxUint256);
+    vault = await Vault.deploy(wantAddress, 'OP Sonne Crypt', 'rf-soOP', 0, ethers.constants.MaxUint256);
     console.log('vault');
 
     console.log(`vault.address: ${vault.address}`);
@@ -156,7 +157,7 @@ describe('Vaults', function () {
       const vaultBalance = await vault.balance();
       console.log('vaultBalance');
       console.log(vaultBalance);
-      const depositAmount = toWantUnit('10');
+      const depositAmount = toWantUnit('10000');
       console.log('depositAmount');
       console.log(depositAmount);
       await vault.connect(self).deposit(depositAmount);
@@ -189,7 +190,7 @@ describe('Vaults', function () {
     });
 
     it('should trigger deleveraging on deposit when LTV is too high', async function () {
-      const depositAmount = toWantUnit('10');
+      const depositAmount = toWantUnit('10000');
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
       console.log(`ltvBefore: ${ltvBefore}`);
@@ -205,7 +206,7 @@ describe('Vaults', function () {
     });
 
     it('should not change leverage when LTV is within the allowed drift on deposit', async function () {
-      const depositAmount = toWantUnit('1');
+      const depositAmount = toWantUnit('10000');
       const ltv = toWantUnit(targetLTVText);
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
@@ -227,7 +228,7 @@ describe('Vaults', function () {
       await vault.connect(self).deposit(selfDepositAmount);
       console.log((await vault.balance()).toString());
 
-      const whaleDepositAmount = toWantUnit('50');
+      const whaleDepositAmount = toWantUnit('1000000');
       await vault.connect(wantWhale).deposit(whaleDepositAmount);
       const selfWantBalance = await vault.balanceOf(selfAddress);
       console.log(selfWantBalance.toString());
@@ -253,7 +254,7 @@ describe('Vaults', function () {
     it('should allow withdrawals', async function () {
       const userBalance = await want.balanceOf(selfAddress);
       console.log(`userBalance: ${userBalance}`);
-      const depositAmount = toWantUnit('1');
+      const depositAmount = toWantUnit('56');
       await vault.connect(self).deposit(depositAmount);
       console.log(`await want.balanceOf(selfAddress): ${await want.balanceOf(selfAddress)}`);
 
@@ -263,8 +264,8 @@ describe('Vaults', function () {
       const userBalanceAfterWithdraw = await want.balanceOf(selfAddress);
       const securityFee = 10;
       const percentDivisor = 10000;
-      const withdrawFee = (depositAmount * securityFee) / percentDivisor;
-      const expectedBalance = userBalance.sub(withdrawFee);
+      const withdrawFee = (56 * securityFee) / percentDivisor;
+      const expectedBalance = userBalance.sub(toWantUnit(withdrawFee.toString()));
       const smallDifference = expectedBalance * 0.0000001;
       console.log(`expectedBalance.sub(userBalanceAfterWithdraw): ${expectedBalance.sub(userBalanceAfterWithdraw)}`);
       console.log(`smallDifference: ${smallDifference}`);
@@ -275,14 +276,14 @@ describe('Vaults', function () {
     it('should trigger leveraging on withdraw when LTV is too low', async function () {
       const startingLTV = toWantUnit('0.5');
       await strategy.setTargetLtv(startingLTV);
-      const depositAmount = toWantUnit('10');
+      const depositAmount = toWantUnit('10000');
 
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
       console.log(`ltvBefore: ${ltvBefore}`);
       const allowedLTVDrift = toWantUnit('0.01');
       expect(ltvBefore).to.be.closeTo(startingLTV, allowedLTVDrift);
-      const newLTV = toWantUnit('0.7');
+      const newLTV = toWantUnit('0.6');
       await strategy.setTargetLtv(newLTV);
       const smallWithdrawAmount = toWantUnit('0.01');
       const userBalance = await want.balanceOf(selfAddress);
@@ -301,9 +302,9 @@ describe('Vaults', function () {
     });
 
     it('should trigger deleveraging on withdraw when LTV is too high', async function () {
-      const startingLTV = toWantUnit('0.73');
+      const startingLTV = toWantUnit('0.63');
       await strategy.setTargetLtv(startingLTV);
-      const depositAmount = toWantUnit('10');
+      const depositAmount = toWantUnit('10000');
 
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
@@ -329,9 +330,9 @@ describe('Vaults', function () {
     });
 
     it('should not change leverage on withdraw when still in the allowed LTV', async function () {
-      const startingLTV = toWantUnit('0.7');
+      const startingLTV = toWantUnit('0.6');
       await strategy.setTargetLtv(startingLTV);
-      const depositAmount = toWantUnit('10');
+      const depositAmount = toWantUnit('10000');
 
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
@@ -362,7 +363,7 @@ describe('Vaults', function () {
       await vault.connect(self).deposit(depositAmount);
       console.log(`await want.balanceOf(selfAddress): ${await want.balanceOf(selfAddress)}`);
 
-      const whaleDepositAmount = toWantUnit('50');
+      const whaleDepositAmount = toWantUnit('500000');
       await vault.connect(wantWhale).deposit(whaleDepositAmount);
 
       await vault.connect(self).withdrawAll();
@@ -405,7 +406,7 @@ describe('Vaults', function () {
     });
 
     it('should be able to harvest', async function () {
-      await vault.connect(self).deposit(toWantUnit('10'));
+      await vault.connect(self).deposit(toWantUnit('100000'));
       const estimatedGas = await strategy.estimateGas.harvest();
       console.log(`estimatedGas: ${estimatedGas}`);
       await strategy.connect(self).harvest();
@@ -414,7 +415,7 @@ describe('Vaults', function () {
     it('should provide yield', async function () {
       const blocksToSkip = 100;
       const initialUserBalance = await want.balanceOf(selfAddress);
-      const depositAmount = initialUserBalance.div(10);
+      const depositAmount = toWantUnit('10000');
 
       await vault.connect(self).deposit(depositAmount);
       const initialVaultBalance = await vault.balance();
