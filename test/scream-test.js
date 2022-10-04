@@ -41,11 +41,11 @@ describe('Vaults', function () {
   const treasuryAddress = '0xeb9C9b785aA7818B2EBC8f9842926c4B9f707e4B';
 
   const usdcAddress = '0x7F5c764cBc14f9669B88837ca1490cCa17c31607';
-  const soWantAddress = '0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F';
-  const wantAddress = usdcAddress;
+  const soWantAddress = '0x5569b83de187375d43FBd747598bfe64fC8f6436';
+  const wantAddress = '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1';
 
-  const wantHolder = '0xD6216fC19DB775Df9774a6E33526131dA7D19a2c';
-  const wantWhaleAddress = '0xEbe80f029b1c02862B9E8a70a7e5317C06F62Cae';
+  const wantHolder = '0x555187752Ef6d73758862B5d364AAB362c996d0e';
+  const wantWhaleAddress = '0x441b02540B16B22D64A5Be8d3A4Dcf9a4E0EFA98';
   const strategistAddress = '0x1A20D7A31e5B3Bc5f02c8A146EF6f394502a10c4';
 
   const superAdminAddress = '0x9BC776dBb134Ef9D7014dB1823Cd755Ac5015203';
@@ -102,7 +102,7 @@ describe('Vaults', function () {
     console.log('treasury');
     want = await Want.attach(wantAddress);
     console.log('want attached');
-    vault = await Vault.deploy(wantAddress, 'USDC Sonne Crypt', 'rf-soUSDC', 0, ethers.constants.MaxUint256);
+    vault = await Vault.deploy(wantAddress, 'DAI Sonne Crypt', 'rf-soDAI', 0, ethers.constants.MaxUint256);
     console.log('vault');
 
     console.log(`vault.address: ${vault.address}`);
@@ -156,7 +156,7 @@ describe('Vaults', function () {
       const vaultBalance = await vault.balance();
       console.log('vaultBalance');
       console.log(vaultBalance);
-      const depositAmount = toWantUnit('1000', true);
+      const depositAmount = toWantUnit('10000');
       console.log('depositAmount');
       console.log(depositAmount);
       await vault.connect(self).deposit(depositAmount);
@@ -189,7 +189,7 @@ describe('Vaults', function () {
     });
 
     it('should trigger deleveraging on deposit when LTV is too high', async function () {
-      const depositAmount = toWantUnit('100', true);
+      const depositAmount = toWantUnit('10000');
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
       console.log(`ltvBefore: ${ltvBefore}`);
@@ -205,7 +205,7 @@ describe('Vaults', function () {
     });
 
     it('should not change leverage when LTV is within the allowed drift on deposit', async function () {
-      const depositAmount = toWantUnit('1', true);
+      const depositAmount = toWantUnit('1');
       const ltv = toWantUnit(targetLTVText);
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
@@ -223,15 +223,15 @@ describe('Vaults', function () {
       console.log('---------------------------------------------');
       const userBalance = await want.balanceOf(selfAddress);
       console.log(userBalance.toString());
-      const selfDepositAmount = toWantUnit('0.005', true);
+      const selfDepositAmount = toWantUnit('0.005');
       await vault.connect(self).deposit(selfDepositAmount);
       console.log((await vault.balance()).toString());
 
-      const whaleDepositAmount = toWantUnit('100', true);
+      const whaleDepositAmount = toWantUnit('100');
       await vault.connect(wantWhale).deposit(whaleDepositAmount);
       const selfWantBalance = await vault.balanceOf(selfAddress);
       console.log(selfWantBalance.toString());
-      const ownerDepositAmount = toWantUnit('1', true);
+      const ownerDepositAmount = toWantUnit('1');
       await want.connect(self).transfer(ownerAddress, ownerDepositAmount);
       const ownerBalance = await want.balanceOf(ownerAddress);
 
@@ -245,7 +245,7 @@ describe('Vaults', function () {
       console.log(`ownerWantBalance: ${ownerWantBalance}`);
       const ownerVaultWantBalanceAfterWithdraw = await vault.balanceOf(ownerAddress);
       console.log(`ownerVaultWantBalanceAfterWithdraw: ${ownerVaultWantBalanceAfterWithdraw}`);
-      const allowedImprecision = toWantUnit('0.01', true);
+      const allowedImprecision = toWantUnit('0.01');
       // expect(ownerWantBalance).to.be.closeTo(ownerDepositAmount, allowedImprecision);
       // expect(selfWantBalance).to.equal(selfDepositAmount);
     });
@@ -253,7 +253,7 @@ describe('Vaults', function () {
     it('should allow withdrawals', async function () {
       const userBalance = await want.balanceOf(selfAddress);
       console.log(`userBalance: ${userBalance}`);
-      const depositAmount = toWantUnit('1', true);
+      const depositAmount = toWantUnit('1');
       await vault.connect(self).deposit(depositAmount);
       console.log(`await want.balanceOf(selfAddress): ${await want.balanceOf(selfAddress)}`);
 
@@ -275,7 +275,7 @@ describe('Vaults', function () {
     it('should trigger leveraging on withdraw when LTV is too low', async function () {
       const startingLTV = toWantUnit('0.6');
       await strategy.setTargetLtv(startingLTV);
-      const depositAmount = toWantUnit('100', true);
+      const depositAmount = toWantUnit('100');
 
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
@@ -284,7 +284,7 @@ describe('Vaults', function () {
       expect(ltvBefore).to.be.closeTo(startingLTV, allowedLTVDrift);
       const newLTV = toWantUnit('0.7');
       await strategy.setTargetLtv(newLTV);
-      const smallWithdrawAmount = toWantUnit('1', true);
+      const smallWithdrawAmount = toWantUnit('1');
       const userBalance = await want.balanceOf(selfAddress);
       await vault.connect(self).withdraw(smallWithdrawAmount);
       const userBalanceAfterWithdraw = await want.balanceOf(selfAddress);
@@ -303,7 +303,7 @@ describe('Vaults', function () {
     it('should trigger deleveraging on withdraw when LTV is too high', async function () {
       const startingLTV = toWantUnit('0.7');
       await strategy.setTargetLtv(startingLTV);
-      const depositAmount = toWantUnit('100', true);
+      const depositAmount = toWantUnit('100');
 
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
@@ -312,7 +312,7 @@ describe('Vaults', function () {
       expect(ltvBefore).to.be.closeTo(startingLTV, allowedLTVDrift);
       const newLTV = toWantUnit('0');
       await strategy.setTargetLtv(newLTV);
-      const smallWithdrawAmount = toWantUnit('1', true);
+      const smallWithdrawAmount = toWantUnit('1');
       const userBalance = await want.balanceOf(selfAddress);
       await vault.connect(self).withdraw(smallWithdrawAmount);
       const userBalanceAfterWithdraw = await want.balanceOf(selfAddress);
@@ -331,7 +331,7 @@ describe('Vaults', function () {
     it('should not change leverage on withdraw when still in the allowed LTV', async function () {
       const startingLTV = toWantUnit('0.7');
       await strategy.setTargetLtv(startingLTV);
-      const depositAmount = toWantUnit('100', true);
+      const depositAmount = toWantUnit('100');
 
       await vault.connect(self).deposit(depositAmount);
       const ltvBefore = await strategy.calculateLTV();
@@ -340,7 +340,7 @@ describe('Vaults', function () {
       expect(ltvBefore).to.be.closeTo(startingLTV, allowedLTVDrift);
 
       const userBalance = await want.balanceOf(selfAddress);
-      const smallWithdrawAmount = toWantUnit('0.005', true);
+      const smallWithdrawAmount = toWantUnit('0.005');
       await vault.connect(self).withdraw(smallWithdrawAmount);
       const userBalanceAfterWithdraw = await want.balanceOf(selfAddress);
       const ltvAfter = await strategy.calculateLTV();
@@ -358,11 +358,11 @@ describe('Vaults', function () {
     it('should allow small withdrawal', async function () {
       const userBalance = await want.balanceOf(selfAddress);
       console.log(`userBalance: ${userBalance}`);
-      const depositAmount = toWantUnit('1', true);
+      const depositAmount = toWantUnit('1');
       await vault.connect(self).deposit(depositAmount);
       console.log(`await want.balanceOf(selfAddress): ${await want.balanceOf(selfAddress)}`);
 
-      const whaleDepositAmount = toWantUnit('10000', true);
+      const whaleDepositAmount = toWantUnit('10000');
       await vault.connect(wantWhale).deposit(whaleDepositAmount);
 
       await vault.connect(self).withdrawAll();
@@ -384,7 +384,7 @@ describe('Vaults', function () {
       const userBalance = await want.balanceOf(selfAddress);
       console.log(`userBalance: ${userBalance}`);
       // "0.0000000000001" for 1e18
-      const depositAmount = toWantUnit('0.001', true);
+      const depositAmount = toWantUnit('0.001');
 
       await vault.connect(self).deposit(depositAmount);
       console.log(`await want.balanceOf(selfAddress): ${await want.balanceOf(selfAddress)}`);
@@ -398,14 +398,14 @@ describe('Vaults', function () {
       const percentDivisor = 10000;
       const withdrawFee = (depositAmount * securityFee) / percentDivisor;
       const expectedBalance = userBalance.sub(withdrawFee);
-      const isSmallBalanceDifference = expectedBalance.sub(userBalanceAfterWithdraw) < 100;
+      const isSmallBalanceDifference = expectedBalance.sub(userBalanceAfterWithdraw) < 1e10;
       console.log(`expectedBalance: ${expectedBalance}`);
       console.log(`userBalanceAfterWithdraw: ${userBalanceAfterWithdraw}`);
       expect(isSmallBalanceDifference).to.equal(true);
     });
 
     it('should be able to harvest', async function () {
-      await vault.connect(self).deposit(toWantUnit(1000, true));
+      await vault.connect(self).deposit(toWantUnit('1000'));
       const estimatedGas = await strategy.estimateGas.harvest();
       console.log(`estimatedGas: ${estimatedGas}`);
       await strategy.connect(self).harvest();
@@ -438,14 +438,14 @@ describe('Vaults', function () {
   describe('Strategy', function () {
     it('should be able to pause and unpause', async function () {
       await strategy.pause();
-      const depositAmount = toWantUnit('.05', true);
+      const depositAmount = toWantUnit('.05');
       await expect(vault.connect(self).deposit(depositAmount)).to.be.reverted;
       await strategy.unpause();
       await expect(vault.connect(self).deposit(depositAmount)).to.not.be.reverted;
     });
 
     it('should be able to panic', async function () {
-      const depositAmount = toWantUnit('0.05', true);
+      const depositAmount = toWantUnit('0.05');
       await vault.connect(self).deposit(depositAmount);
       const vaultBalance = await vault.balance();
       const strategyBalance = await strategy.balanceOf();
