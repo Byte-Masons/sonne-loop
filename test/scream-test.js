@@ -102,7 +102,7 @@ describe('Vaults', function () {
     console.log('treasury');
     want = await Want.attach(wantAddress);
     console.log('want attached');
-    vault = await Vault.deploy(wantAddress, 'DAI Sonne Crypt', 'rf-soDAI', 0, ethers.constants.MaxUint256);
+    vault = await Vault.deploy(wantAddress, 'sUSD Sonne Crypt', 'rf-soSUSD', 0, ethers.constants.MaxUint256);
     console.log('vault');
 
     console.log(`vault.address: ${vault.address}`);
