@@ -109,12 +109,12 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      */
     function _withdraw(uint256 _withdrawAmount) internal override doUpdateBalance {
         uint256 wantBalance = IERC20Upgradeable(want).balanceOf(address(this));
-        
+
         if (_withdrawAmount <= wantBalance) {
             IERC20Upgradeable(want).safeTransfer(vault, _withdrawAmount);
             return;
         }
-        
+
         uint256 _ltv = _calculateLTVAfterWithdraw(_withdrawAmount);
 
         if (_shouldLeverage(_ltv)) {
@@ -430,8 +430,6 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
 
         uint256 withdrawAmount = _withdrawAmount - 1;
         if (withdrawAmount < initialWithdrawAmount) {
-            bool hitRequire = withdrawAmount >=
-                (initialWithdrawAmount * (PERCENT_DIVISOR - withdrawSlippageTolerance)) / PERCENT_DIVISOR;
             require(
                 withdrawAmount >=
                     (initialWithdrawAmount * (PERCENT_DIVISOR - withdrawSlippageTolerance)) / PERCENT_DIVISOR
@@ -552,7 +550,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      */
     function _harvestCore() internal override returns (uint256 callerFee) {
         _claimRewards();
-        uint256 usdcGained = _swapRewardsToUsdc();
+        _swapRewardsToUsdc();
         callerFee = _chargeFees();
         _swapToWant();
         deposit();
@@ -592,13 +590,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Core harvest function.
      * Swaps {SONNE} to {USDC}
      */
-    function _swapRewardsToUsdc() internal returns (uint256 usdcGained) {
+    function _swapRewardsToUsdc() internal {
         uint256 sonneBalance = IERC20Upgradeable(SONNE).balanceOf(address(this));
         if (sonneBalance >= minSonneToSell) {
-            uint256 usdcBalanceBefore = IERC20Upgradeable(USDC).balanceOf(address(this));
             _swap(sonneToUsdcRoute, sonneBalance);
-            uint256 usdcBalanceAfter = IERC20Upgradeable(USDC).balanceOf(address(this));
-            usdcGained = usdcBalanceAfter - usdcBalanceBefore;
         }
     }
 
