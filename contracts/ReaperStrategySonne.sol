@@ -550,8 +550,8 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      */
     function _harvestCore() internal override returns (uint256 callerFee) {
         _claimRewards();
-        _swapRewardsToUsdc();
-        callerFee = _chargeFees();
+        uint256 usdcGained = _swapRewardsToUsdc();
+        callerFee = _chargeFees(usdcGained);
         _swapToWant();
         deposit();
     }
@@ -590,10 +590,13 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Core harvest function.
      * Swaps {SONNE} to {USDC}
      */
-    function _swapRewardsToUsdc() internal {
+    function _swapRewardsToUsdc() internal returns (uint256 usdcGained) {
         uint256 sonneBalance = IERC20Upgradeable(SONNE).balanceOf(address(this));
         if (sonneBalance >= minSonneToSell) {
+            uint256 usdcBalanceBefore = IERC20Upgradeable(USDC).balanceOf(address(this));
             _swap(sonneToUsdcRoute, sonneBalance);
+            uint256 usdcBalanceAfter = IERC20Upgradeable(USDC).balanceOf(address(this));
+            usdcGained = usdcBalanceAfter - usdcBalanceBefore;
         }
     }
 
@@ -601,8 +604,8 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Core harvest function.
      * Charges fees based on the amount of USDC gained from reward
      */
-    function _chargeFees() internal returns (uint256 callFeeToUser) {
-        uint256 usdcFee = (IERC20Upgradeable(USDC).balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
+    function _chargeFees(uint256 usdcGained) internal returns (uint256 callFeeToUser) {
+        uint256 usdcFee = (usdcGained * totalFee) / PERCENT_DIVISOR;
         if (usdcFee != 0) {
             callFeeToUser = (usdcFee * callFee) / PERCENT_DIVISOR;
             uint256 treasuryFeeToVault = (usdcFee * treasuryFee) / PERCENT_DIVISOR;

@@ -3,14 +3,14 @@
   "proxies": [
     {
       "address": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
-      "txHash": "0x5f6b7216a473f9c9a913117264c657547fbc240f81663da24cce3d8627533865",
+      "txHash": "0xbc4642f7a6092ddcb479b90a0d5c803c365b62306110f5f5649ddb269c490da9",
       "kind": "uups"
     }
   ],
   "impls": {
-    "6b5b298a7c1c89a648d209693a54aca0f061673d5b1967ea78ea7d6c60b836f4": {
+    "6d2e72c7efb90d8bad39686bbbb0ed4d38852c13774fe9f4e2db62aba9571f87": {
       "address": "0x9A676e781A523b5d0C0e43731313A708CB607508",
-      "txHash": "0xc799938760e58e9f7490adb5e2924ce67d37dff400822deafd7370d3f3550f8d",
+      "txHash": "0xfadb5293dc3f0887ba44740ab896a5711e9a77fafd221ea52e15050a46d945b0",
       "layout": {
         "solcVersion": "0.8.11",
         "storage": [
@@ -115,7 +115,7 @@
             "label": "harvestLog",
             "offset": 0,
             "slot": "351",
-            "type": "t_array(t_struct(Harvest)4838_storage)dyn_storage",
+            "type": "t_array(t_struct(Harvest)4867_storage)dyn_storage",
             "contract": "ReaperBaseStrategyv3",
             "src": "contracts\\abstract\\ReaperBaseStrategyv3.sol:27"
           },
@@ -211,7 +211,7 @@
             "label": "cWant",
             "offset": 0,
             "slot": "363",
-            "type": "t_contract(CErc20I)5722",
+            "type": "t_contract(CErc20I)5751",
             "contract": "ReaperStrategySonne",
             "src": "contracts\\ReaperStrategySonne.sol:27"
           },
@@ -219,7 +219,7 @@
             "label": "comptroller",
             "offset": 0,
             "slot": "364",
-            "type": "t_contract(IComptroller)6068",
+            "type": "t_contract(IComptroller)6097",
             "contract": "ReaperStrategySonne",
             "src": "contracts\\ReaperStrategySonne.sol:35"
           },
@@ -325,7 +325,7 @@
             "label": "bytes32[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(Harvest)4838_storage)dyn_storage": {
+          "t_array(t_struct(Harvest)4867_storage)dyn_storage": {
             "label": "struct ReaperBaseStrategyv3.Harvest[]",
             "numberOfBytes": "32"
           },
@@ -345,11 +345,11 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(CErc20I)5722": {
+          "t_contract(CErc20I)5751": {
             "label": "contract CErc20I",
             "numberOfBytes": "20"
           },
-          "t_contract(IComptroller)6068": {
+          "t_contract(IComptroller)6097": {
             "label": "contract IComptroller",
             "numberOfBytes": "20"
           },
@@ -381,7 +381,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(Harvest)4838_storage": {
+          "t_struct(Harvest)4867_storage": {
             "label": "struct ReaperBaseStrategyv3.Harvest",
             "members": [
               {
