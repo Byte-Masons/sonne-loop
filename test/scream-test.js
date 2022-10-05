@@ -414,6 +414,7 @@ describe('Vaults', function () {
 
     it('should provide yield', async function () {
       const blocksToSkip = 100;
+      const timeToSkip = 200;
       const initialUserBalance = await want.balanceOf(selfAddress);
       const depositAmount = toWantUnit('10000');
 
@@ -425,6 +426,7 @@ describe('Vaults', function () {
       const numHarvests = 2;
       for (let i = 0; i < numHarvests; i++) {
         await moveBlocksForward(blocksToSkip);
+        await moveTimeForward(timeToSkip);
         await vault.connect(self).deposit(depositAmount);
         await strategy.harvest();
       }
