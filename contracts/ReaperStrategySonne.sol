@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: agpl-3.0
 
 import './abstract/ReaperBaseStrategyv3.sol';
 import './interfaces/CErc20I.sol';
