@@ -44,8 +44,8 @@ describe('Vaults', function () {
   const soWantAddress = '0xf7B5965f5C117Eb1B5450187c9DcFccc3C317e8E';
   const wantAddress = '0x4200000000000000000000000000000000000006';
 
-  const wantHolder = '0x0a61e7D0fC8190E8b6B8D206E38B96e3bb7e7949';
-  const wantWhaleAddress = '0x00dEe1F836998bcc736022f314dF906588d44808';
+  const wantWhaleAddress = '0x0a61e7D0fC8190E8b6B8D206E38B96e3bb7e7949';
+  const wantHolder = '0x00dEe1F836998bcc736022f314dF906588d44808';
   const strategistAddress = '0x1A20D7A31e5B3Bc5f02c8A146EF6f394502a10c4';
 
   const superAdminAddress = '0x9BC776dBb134Ef9D7014dB1823Cd755Ac5015203';
@@ -412,7 +412,8 @@ describe('Vaults', function () {
     });
 
     it('should provide yield', async function () {
-      const blocksToSkip = 100;
+      const blocksToSkip = 10000;
+      const timeToSkip = 20000;
       const initialUserBalance = await want.balanceOf(selfAddress);
       const depositAmount = initialUserBalance.div(10);
 
@@ -423,6 +424,7 @@ describe('Vaults', function () {
 
       const numHarvests = 2;
       for (let i = 0; i < numHarvests; i++) {
+        await moveTimeForward(timeToSkip);
         await moveBlocksForward(blocksToSkip);
         await vault.connect(self).deposit(depositAmount);
         await strategy.harvest();
