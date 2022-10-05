@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
 
 import './abstract/ReaperBaseStrategyv3.sol';
-//import './interfaces/IUniswapRouter.sol';
 import './interfaces/CErc20I.sol';
 import './interfaces/IComptroller.sol';
-import "./interfaces/IVeloRouter.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-
-import "hardhat/console.sol";
+import './interfaces/IVeloRouter.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
 
 pragma solidity 0.8.11;
 
@@ -101,8 +98,6 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         minSonneToSell = 10000000000000000;
         withdrawSlippageTolerance = 50;
 
-        _giveAllowances();
-
         comptroller.enterMarkets(markets);
         setTargetLtv(_targetLTV);
     }
@@ -113,11 +108,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * The available {want} minus fees is returned to the vault.
      */
     function _withdraw(uint256 _withdrawAmount) internal override doUpdateBalance {
-        console.log("_withdraw()");
-        require(msg.sender == vault);
-
         uint256 _ltv = _calculateLTVAfterWithdraw(_withdrawAmount);
-        console.log("_ltv: ", _ltv);
 
         if (_shouldLeverage(_ltv)) {
             // Strategy is underleveraged so can withdraw underlying directly
@@ -179,7 +170,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
 
         (, uint256 collateralFactorMantissa, ) = comptroller.markets(address(cWant));
         require(collateralFactorMantissa > _ltv + allowedLTVDrift);
-        require(_ltv <= collateralFactorMantissa * LTV_SAFETY_ZONE / MANTISSA);
+        require(_ltv <= (collateralFactorMantissa * LTV_SAFETY_ZONE) / MANTISSA);
         targetLTV = _ltv;
     }
 
@@ -211,7 +202,6 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         minSonneToSell = _minSonneToSell;
     }
 
-
     /**
      * @dev Sets the minimum want to leverage/deleverage (loop) for
      */
@@ -233,8 +223,8 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      */
     function setUsdcToWantRoute(address[] calldata _newUsdcToWantRoute) external {
         _atLeastRole(STRATEGIST);
-        require(_newUsdcToWantRoute[0] == USDC, "bad route");
-        require(_newUsdcToWantRoute[_newUsdcToWantRoute.length - 1] == want, "bad route");
+        require(_newUsdcToWantRoute[0] == USDC, 'bad route');
+        require(_newUsdcToWantRoute[_newUsdcToWantRoute.length - 1] == want, 'bad route');
         delete usdcToWantRoute;
         usdcToWantRoute = _newUsdcToWantRoute;
     }
@@ -362,10 +352,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Returns if the strategy should deleverage with the given ltv level
      */
     function _shouldDeleverage(uint256 _ltv) internal view returns (bool) {
-        console.log("_shouldDeleverage()", _ltv);
-        console.log("targetLTV + allowedLTVDrift", targetLTV + allowedLTVDrift);
         if (_ltv > targetLTV + allowedLTVDrift) {
-            console.log("shouldDeleverage == true");
             return true;
         }
         return false;
@@ -403,14 +390,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Withdraws want to the strat by redeeming the underlying
      */
     function _withdrawUnderlying(uint256 _withdrawAmount) internal {
-        console.log("_withdrawUnderlying()");
         uint256 initialWithdrawAmount = _withdrawAmount;
         uint256 supplied = cWant.balanceOfUnderlying(address(this));
         uint256 borrowed = cWant.borrowBalanceStored(address(this));
         uint256 realSupplied = supplied - borrowed;
-        console.log("supplied: ", supplied);
-        console.log("borrowed: ", borrowed);
-        console.log("realSupplied: ", realSupplied);
 
         if (realSupplied == 0) {
             return;
@@ -427,13 +410,9 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
             tempColla = 1e15; // 0.001 * 1e18. lower we have issues
         }
 
-        console.log("tempColla: ", tempColla);
-
         reservedAmount = (borrowed * MANTISSA) / tempColla;
-        console.log("reservedAmount: ", reservedAmount);
         if (supplied >= reservedAmount) {
             uint256 redeemable = supplied - reservedAmount;
-            console.log("redeemable: ", redeemable);
             uint256 balance = cWant.balanceOf(address(this));
             if (balance > 1) {
                 if (redeemable < _withdrawAmount) {
@@ -443,23 +422,14 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         }
 
         uint256 withdrawAmount = _withdrawAmount - 1;
-        console.log("withdrawAmount: ", withdrawAmount);
-        console.log("initialWithdrawAmount: ", initialWithdrawAmount);
-        if(withdrawAmount < initialWithdrawAmount) {
+        if (withdrawAmount < initialWithdrawAmount) {
             bool hitRequire = withdrawAmount >=
-                    (initialWithdrawAmount *
-                        (PERCENT_DIVISOR - withdrawSlippageTolerance)) /
-                        PERCENT_DIVISOR;
-            console.log("hitRequire: ", hitRequire);
+                (initialWithdrawAmount * (PERCENT_DIVISOR - withdrawSlippageTolerance)) / PERCENT_DIVISOR;
             require(
                 withdrawAmount >=
-                    (initialWithdrawAmount *
-                        (PERCENT_DIVISOR - withdrawSlippageTolerance)) /
-                        PERCENT_DIVISOR
+                    (initialWithdrawAmount * (PERCENT_DIVISOR - withdrawSlippageTolerance)) / PERCENT_DIVISOR
             );
         }
-
-        console.log("redeem: ", withdrawAmount);
 
         CErc20I(cWant).redeemUnderlying(withdrawAmount);
     }
@@ -512,14 +482,12 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * that will maintain the target LTV
      */
     function _deleverage(uint256 _withdrawAmount) internal {
-        console.log("_deleverage()");
         uint256 newBorrow = _getDesiredBorrow(_withdrawAmount);
 
         // //If there is no deficit we dont need to adjust position
         // //if the position change is tiny do nothing
         if (newBorrow > minWantToLeverage) {
             uint256 i = 0;
-            console.log("_deleverage()");
             while (newBorrow > minWantToLeverage) {
                 newBorrow = newBorrow - _leverDownStep(newBorrow);
                 i++;
@@ -575,7 +543,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * 4. Swaps the {USDC} token for {want}
      * 5. Deposits.
      */
-    function _harvestCore() internal override returns(uint256 callerFee) {
+    function _harvestCore() internal override returns (uint256 callerFee) {
         _claimRewards();
         uint256 usdcGained = _swapRewardsToUsdc();
         callerFee = _chargeFees();
@@ -596,7 +564,6 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
 
     /// @dev Helper function to swap given a {_path} and an {_amount}.
     function _swap(address[] memory _path, uint256 _amount) internal {
-        console.log("_swap: ", _amount);
         if (_amount != 0) {
             IVeloRouter router = IVeloRouter(VELO_ROUTER);
             IVeloRouter.route[] memory routes = new IVeloRouter.route[](_path.length - 1);
@@ -606,10 +573,9 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
             bool useStable;
             for (uint256 i = 0; i < routes.length; i++) {
                 (output, useStable) = router.getAmountOut(prevRouteOutput, _path[i], _path[i + 1]);
-                routes[i] = IVeloRouter.route({from: _path[i], to: _path[i + 1], stable: useStable});
+                routes[i] = IVeloRouter.route({ from: _path[i], to: _path[i + 1], stable: useStable });
                 prevRouteOutput = output;
             }
-            console.log("_path[0]: ", _path[0]);
             IERC20Upgradeable(_path[0]).safeIncreaseAllowance(VELO_ROUTER, _amount);
             router.swapExactTokensForTokens(_amount, 0, routes, address(this), block.timestamp);
         }
@@ -619,17 +585,13 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Core harvest function.
      * Swaps {SONNE} to {USDC}
      */
-    function _swapRewardsToUsdc() internal returns(uint256 usdcGained) {
-        console.log("_swapRewardsToUsdc()");
+    function _swapRewardsToUsdc() internal returns (uint256 usdcGained) {
         uint256 sonneBalance = IERC20Upgradeable(SONNE).balanceOf(address(this));
-        console.log("sonneBalance: ", sonneBalance);
-        console.log("minSonneToSell: ", minSonneToSell);
         if (sonneBalance >= minSonneToSell) {
             uint256 usdcBalanceBefore = IERC20Upgradeable(USDC).balanceOf(address(this));
             _swap(sonneToUsdcRoute, sonneBalance);
             uint256 usdcBalanceAfter = IERC20Upgradeable(USDC).balanceOf(address(this));
             usdcGained = usdcBalanceAfter - usdcBalanceBefore;
-            console.log("usdcGained: ", usdcGained);
         }
     }
 
@@ -637,7 +599,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Core harvest function.
      * Charges fees based on the amount of USDC gained from reward
      */
-    function _chargeFees() internal returns(uint256 callFeeToUser) {
+    function _chargeFees() internal returns (uint256 callFeeToUser) {
         uint256 usdcFee = (IERC20Upgradeable(USDC).balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
         if (usdcFee != 0) {
             callFeeToUser = (usdcFee * callFee) / PERCENT_DIVISOR;
@@ -656,7 +618,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         if (want == USDC) {
             return;
         }
-        
+
         uint256 usdcBalance = IERC20Upgradeable(USDC).balanceOf(address(this));
         if (usdcBalance != 0) {
             _swap(usdcToWantRoute, usdcBalance);
@@ -672,36 +634,9 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
     }
 
     /**
-     * @dev Gives the necessary allowances to mint cWant, swap rewards etc
-     */
-    function _giveAllowances() internal {
-        // IERC20Upgradeable(want).safeIncreaseAllowance(
-        //     address(cWant),
-        //     type(uint256).max - IERC20Upgradeable(want).allowance(address(this), address(cWant))
-        // );
-        // IERC20Upgradeable(USDC).safeIncreaseAllowance(
-        //     VELO_ROUTER,
-        //     type(uint256).max - IERC20Upgradeable(USDC).allowance(address(this), VELO_ROUTER)
-        // );
-        // IERC20Upgradeable(SONNE).safeIncreaseAllowance(
-        //     VELO_ROUTER,
-        //     type(uint256).max - IERC20Upgradeable(SONNE).allowance(address(this), VELO_ROUTER)
-        // );
-    }
-
-    /**
-     * @dev Removes all allowance that were given
-     */
-    function _removeAllowances() internal {
-        // IERC20Upgradeable(want).safeDecreaseAllowance(address(cWant), IERC20Upgradeable(want).allowance(address(this), address(cWant)));
-        // IERC20Upgradeable(USDC).safeDecreaseAllowance(VELO_ROUTER, IERC20Upgradeable(USDC).allowance(address(this), VELO_ROUTER));
-        // IERC20Upgradeable(SONNE).safeDecreaseAllowance(VELO_ROUTER, IERC20Upgradeable(SONNE).allowance(address(this), VELO_ROUTER));
-    }
-
-    /**
      * @dev Helper modifier for functions that need to update the internal balance at the end of their execution.
      */
-    modifier doUpdateBalance {
+    modifier doUpdateBalance() {
         _;
         updateBalance();
     }
