@@ -1,30 +1,21 @@
 async function main() {
-  const Vault = await ethers.getContractFactory("ReaperVaultv1_3");
+  const Vault = await ethers.getContractFactory('ReaperVaultv1_4');
 
-  //const usdcAddress = "0x04068da6c83afcfa0e13ba15a6696662335d5b75";
-  const fUSDTAddress = "0x049d68029688eabf473097a2fc38ef61633a3c7a";
-  const tokenName = "fUSDT SCREAM Single Sided";
-  const tokenSymbol = "rf-scfUSDT";
-  const approvalDelay = 0;
+  const wantAddress = '0x7F5c764cBc14f9669B88837ca1490cCa17c31607';
+  const tokenName = 'USDC Sonne Crypt';
+  const tokenSymbol = 'rf-soUSDC';
   const depositFee = 0;
-  const tvlCap = ethers.utils.parseEther("5000");
+  const tvlCap = ethers.constants.MaxUint256;
 
-  const vault = await Vault.deploy(
-    fUSDTAddress,
-    tokenName,
-    tokenSymbol,
-    approvalDelay,
-    depositFee,
-    tvlCap
-  );
+  const vault = await Vault.deploy(wantAddress, tokenName, tokenSymbol, depositFee, tvlCap);
 
   await vault.deployed();
-  console.log("Vault deployed to:", vault.address);
+  console.log('Vault deployed to:', vault.address);
 }
 
 main()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error(error);
     process.exit(1);
   });
