@@ -406,6 +406,10 @@ describe('Vaults', function () {
 
     it('should be able to harvest', async function () {
       await vault.connect(self).deposit(toWantUnit(1000, true));
+      const blocksToSkip = 1000;
+      const timeToSkip = 2000;
+      await moveBlocksForward(blocksToSkip);
+        await moveTimeForward(timeToSkip);
       const estimatedGas = await strategy.estimateGas.harvest();
       console.log(`estimatedGas: ${estimatedGas}`);
       await strategy.connect(self).harvest();

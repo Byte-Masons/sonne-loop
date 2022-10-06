@@ -3,14 +3,14 @@
   "proxies": [
     {
       "address": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
-      "txHash": "0x6551105656eea57b5b9e19d3b439f5c908bf9edc119b336e6eb0380c5254b268",
+      "txHash": "0xf363ba3d961091122f831eaa03eac76aa9416767c5cebcfcea51676ad7b0ddc5",
       "kind": "uups"
     }
   ],
   "impls": {
-    "5a93c404284cf6c17b830f7d016ca29d6392b3914c71f31a0fddeef1f2560cec": {
+    "5597e9e1a128751e07dd5ac1c8012073ec99fa575574e468688f133f47d92e24": {
       "address": "0x9A676e781A523b5d0C0e43731313A708CB607508",
-      "txHash": "0xc6c7f1a3a91628b4ea6d2bece9269b318a5a52897afc279302c3df2171065852",
+      "txHash": "0x73dc769e4a4b58163f607ee20a1725311a11013a6ba9270d25134b3231133d21",
       "layout": {
         "solcVersion": "0.8.11",
         "storage": [
@@ -115,7 +115,7 @@
             "label": "harvestLog",
             "offset": 0,
             "slot": "351",
-            "type": "t_array(t_struct(Harvest)4840_storage)dyn_storage",
+            "type": "t_array(t_struct(Harvest)4827_storage)dyn_storage",
             "contract": "ReaperBaseStrategyv3",
             "src": "contracts\\abstract\\ReaperBaseStrategyv3.sol:27"
           },
@@ -211,7 +211,7 @@
             "label": "cWant",
             "offset": 0,
             "slot": "363",
-            "type": "t_contract(CErc20I)5724",
+            "type": "t_contract(CErc20I)5711",
             "contract": "ReaperStrategySonne",
             "src": "contracts\\ReaperStrategySonne.sol:27"
           },
@@ -219,7 +219,7 @@
             "label": "comptroller",
             "offset": 0,
             "slot": "364",
-            "type": "t_contract(IComptroller)6070",
+            "type": "t_contract(IComptroller)6057",
             "contract": "ReaperStrategySonne",
             "src": "contracts\\ReaperStrategySonne.sol:35"
           },
@@ -296,20 +296,12 @@
             "src": "contracts\\ReaperStrategySonne.sol:69"
           },
           {
-            "label": "minSonneToSell",
+            "label": "withdrawSlippageTolerance",
             "offset": 0,
             "slot": "374",
             "type": "t_uint256",
             "contract": "ReaperStrategySonne",
             "src": "contracts\\ReaperStrategySonne.sol:70"
-          },
-          {
-            "label": "withdrawSlippageTolerance",
-            "offset": 0,
-            "slot": "375",
-            "type": "t_uint256",
-            "contract": "ReaperStrategySonne",
-            "src": "contracts\\ReaperStrategySonne.sol:71"
           }
         ],
         "types": {
@@ -325,7 +317,7 @@
             "label": "bytes32[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(Harvest)4840_storage)dyn_storage": {
+          "t_array(t_struct(Harvest)4827_storage)dyn_storage": {
             "label": "struct ReaperBaseStrategyv3.Harvest[]",
             "numberOfBytes": "32"
           },
@@ -345,11 +337,11 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(CErc20I)5724": {
+          "t_contract(CErc20I)5711": {
             "label": "contract CErc20I",
             "numberOfBytes": "20"
           },
-          "t_contract(IComptroller)6070": {
+          "t_contract(IComptroller)6057": {
             "label": "contract IComptroller",
             "numberOfBytes": "20"
           },
@@ -381,7 +373,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(Harvest)4840_storage": {
+          "t_struct(Harvest)4827_storage": {
             "label": "struct ReaperBaseStrategyv3.Harvest",
             "members": [
               {
