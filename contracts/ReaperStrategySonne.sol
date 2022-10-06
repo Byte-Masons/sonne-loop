@@ -92,7 +92,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         allowedLTVDrift = 0.01 ether;
         balanceOfPool = 0;
         borrowDepth = 12;
-        minWantToLeverage = 5;
+        minWantToLeverage = 1000;
         maxBorrowDepth = 15;
         withdrawSlippageTolerance = 50;
 
