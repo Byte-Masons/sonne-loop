@@ -1,7 +1,7 @@
 const hre = require('hardhat');
 
 async function main() {
-  const vaultAddress = '';
+  const vaultAddress = '0xB62100d94436f53a87516f1aa3Cf42f8A96Ae049';
 
   const Strategy = await ethers.getContractFactory('ReaperStrategySonne');
 
@@ -15,9 +15,9 @@ async function main() {
   const admin = '0xeb9C9b785aA7818B2EBC8f9842926c4B9f707e4B';
   const guardian = '0xb0C9D5851deF8A2Aac4A23031CA2610f8C3483F9';
 
-  const soWant = '0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F';
+  const soWant = '0xf7B5965f5C117Eb1B5450187c9DcFccc3C317e8E';
 
-  const targetLtv = ethers.utils.parseEther('0.78');
+  const targetLtv = ethers.utils.parseEther('0.73');
 
   // const options = { gasPrice: 2000000000000, gasLimit: 9000000 };
 

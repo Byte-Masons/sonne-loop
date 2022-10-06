@@ -90,12 +90,12 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         usdcToWantRoute = [USDC, want];
         sonneToUsdcRoute = [SONNE, USDC];
 
-        allowedLTVDrift = 0.01 ether;
+        allowedLTVDrift = 0 ether;
         balanceOfPool = 0;
         borrowDepth = 12;
         minWantToLeverage = 1000;
         maxBorrowDepth = 15;
-        minSonneToSell = 10000000000000000;
+        minSonneToSell = 0;
         withdrawSlippageTolerance = 50;
 
         comptroller.enterMarkets(markets);
