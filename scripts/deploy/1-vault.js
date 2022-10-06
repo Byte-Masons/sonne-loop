@@ -1,9 +1,9 @@
 async function main() {
   const Vault = await ethers.getContractFactory('ReaperVaultv1_4');
 
-  const wantAddress = '0x7F5c764cBc14f9669B88837ca1490cCa17c31607';
-  const tokenName = 'USDC Sonne Crypt';
-  const tokenSymbol = 'rf-soUSDC';
+  const wantAddress = '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1';
+  const tokenName = 'DAI Sonne Crypt';
+  const tokenSymbol = 'rf-soDAI';
   const depositFee = 0;
   const tvlCap = ethers.constants.MaxUint256;
 
