@@ -630,7 +630,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
     /**
      * @dev Withdraws all funds leaving rewards behind.
      */
-    function _reclaimWant() internal override {
+    function _reclaimWant() internal override doUpdateBalance {
         _deleverage(type(uint256).max);
         _withdrawUnderlying(balanceOfPool);
     }
