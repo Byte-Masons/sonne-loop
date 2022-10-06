@@ -67,7 +67,6 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
     uint256 public borrowDepth;
     uint256 public minWantToLeverage;
     uint256 public maxBorrowDepth;
-    uint256 public minSonneToSell;
     uint256 public withdrawSlippageTolerance;
 
     /**
@@ -93,9 +92,8 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         allowedLTVDrift = 0.01 ether;
         balanceOfPool = 0;
         borrowDepth = 12;
-        minWantToLeverage = 1000;
+        minWantToLeverage = 5;
         maxBorrowDepth = 15;
-        minSonneToSell = 10000000000000000;
         withdrawSlippageTolerance = 50;
 
         comptroller.enterMarkets(markets);
@@ -199,14 +197,6 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         _atLeastRole(STRATEGIST);
         require(_borrowDepth <= maxBorrowDepth);
         borrowDepth = _borrowDepth;
-    }
-
-    /**
-     * @dev Sets the minimum reward the will be sold (too little causes revert from Uniswap)
-     */
-    function setMinSonneToSell(uint256 _minSonneToSell) external {
-        _atLeastRole(STRATEGIST);
-        minSonneToSell = _minSonneToSell;
     }
 
     /**
@@ -444,7 +434,9 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      */
     function _withdrawUnderlyingToVault(uint256 _withdrawAmount) internal {
         _withdrawUnderlying(_withdrawAmount);
-        IERC20Upgradeable(want).safeTransfer(vault, IERC20Upgradeable(want).balanceOf(address(this)));
+        uint256 bal = IERC20Upgradeable(want).balanceOf(address(this));
+        uint256 finalWithdrawAmount = bal < _withdrawAmount ? bal : _withdrawAmount;
+        IERC20Upgradeable(want).safeTransfer(vault, finalWithdrawAmount);
     }
 
     /**
@@ -592,9 +584,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      */
     function _swapRewardsToUsdc() internal {
         uint256 sonneBalance = IERC20Upgradeable(SONNE).balanceOf(address(this));
-        if (sonneBalance >= minSonneToSell) {
-            _swap(sonneToUsdcRoute, sonneBalance);
-        }
+        _swap(sonneToUsdcRoute, sonneBalance);
     }
 
     /**
@@ -630,7 +620,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
     /**
      * @dev Withdraws all funds leaving rewards behind.
      */
-    function _reclaimWant() internal override {
+    function _reclaimWant() internal override doUpdateBalance {
         _deleverage(type(uint256).max);
         _withdrawUnderlying(balanceOfPool);
     }
