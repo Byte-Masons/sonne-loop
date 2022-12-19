@@ -2,8 +2,8 @@ async function main() {
   const Vault = await ethers.getContractFactory('ReaperVaultv1_4');
 
   const wantAddress = '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58';
-  const tokenName = 'USDT Sonne Crypt';
-  const tokenSymbol = 'rf-soUSDT';
+  const tokenName = 'Reaper.Farm Sonne USDT Crypt';
+  const tokenSymbol = 'rf-so-USDT';
   const depositFee = 0;
   const tvlCap = ethers.constants.MaxUint256;
 
