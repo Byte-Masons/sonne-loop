@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: agpl-3.0
 
-import './abstract/ReaperBaseStrategyv3.sol';
+import './abstract/ReaperBaseStrategyv3_1.sol';
 import './interfaces/CErc20I.sol';
 import './interfaces/IComptroller.sol';
 import './interfaces/IVeloRouter.sol';
@@ -11,7 +11,7 @@ pragma solidity 0.8.11;
 /**
  * @dev This strategy will deposit and leverage a token on Sonne to maximize yield by farming reward tokens
  */
-contract ReaperStrategySonne is ReaperBaseStrategyv3 {
+contract ReaperStrategySonne is ReaperBaseStrategyv3_1 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
@@ -78,10 +78,11 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         address _treasury,
         address[] memory _strategists,
         address[] memory _multisigRoles,
+        address[] memory _keepers,
         address _soWant,
         uint256 _targetLTV
     ) public initializer {
-        __ReaperBaseStrategy_init(_vault, _treasury, _strategists, _multisigRoles);
+        __ReaperBaseStrategy_init(_vault, _treasury, _strategists, _multisigRoles, _keepers);
         cWant = CErc20I(_soWant);
         markets = [_soWant];
         comptroller = IComptroller(cWant.comptroller());
@@ -540,10 +541,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * 4. Swaps the {USDC} token for {want}
      * 5. Deposits.
      */
-    function _harvestCore() internal override returns (uint256 callerFee) {
+    function _harvestCore() internal override returns (uint256 feeCharged) {
         _claimRewards();
         _swapRewardsToUsdc();
-        callerFee = _chargeFees();
+        feeCharged = _chargeFees();
         _swapToWant();
         deposit();
     }
@@ -591,14 +592,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Core harvest function.
      * Charges fees based on the amount of USDC gained from reward
      */
-    function _chargeFees() internal returns (uint256 callFeeToUser) {
-        uint256 usdcFee = (IERC20Upgradeable(USDC).balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
-        if (usdcFee != 0) {
-            callFeeToUser = (usdcFee * callFee) / PERCENT_DIVISOR;
-            uint256 treasuryFeeToVault = (usdcFee * treasuryFee) / PERCENT_DIVISOR;
-
-            IERC20Upgradeable(USDC).safeTransfer(msg.sender, callFeeToUser);
-            IERC20Upgradeable(USDC).safeTransfer(treasury, treasuryFeeToVault);
+    function _chargeFees() internal returns (uint256 feeCharged) {
+        feeCharged = (IERC20Upgradeable(USDC).balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
+        if (feeCharged != 0) {
+            IERC20Upgradeable(USDC).safeTransfer(treasury, feeCharged);
         }
     }
 
