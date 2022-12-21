@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: agpl-3.0
+// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
 
@@ -7,7 +7,7 @@ interface IStrategy {
     function deposit() external;
 
     //vault only - withdraws funds from the strategy
-    function withdraw(uint256 _amount) external;
+    function withdraw(uint256 _amount, address _user) external;
 
     //claims rewards, charges fees, and re-deposits; returns caller fee amount.
     function harvest() external returns (uint256);

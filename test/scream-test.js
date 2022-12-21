@@ -37,6 +37,7 @@ describe('Vaults', function () {
   let selfAddress;
   let strategist;
   let owner;
+  let keeper;
 
   const treasuryAddress = '0xeb9C9b785aA7818B2EBC8f9842926c4B9f707e4B';
 
@@ -51,6 +52,24 @@ describe('Vaults', function () {
   const superAdminAddress = '0x9BC776dBb134Ef9D7014dB1823Cd755Ac5015203';
   const adminAddress = '0xeb9C9b785aA7818B2EBC8f9842926c4B9f707e4B';
   const guardianAddress = '0xb0C9D5851deF8A2Aac4A23031CA2610f8C3483F9';
+
+  const keepers = [
+    '0x33D6cB7E91C62Dd6980F16D61e0cfae082CaBFCA',
+    '0x34Df14D42988e4Dc622e37dc318e70429336B6c5',
+    '0x36a63324edFc157bE22CF63A6Bf1C3B49a0E72C0',
+    '0x51263D56ec81B5e823e34d7665A1F505C327b014',
+    '0x5241F63D0C1f2970c45234a0F5b345036117E3C2',
+    '0x5318250BD0b44D1740f47a5b6BE4F7fD5042682D',
+    '0x55a078AFC2e20C8c20d1aa4420710d827Ee494d4',
+    '0x73C882796Ea481fe0A2B8DE499d95e60ff971663',
+    '0x7B540a4D24C906E5fB3d3EcD0Bb7B1aEd3823897',
+    '0x8456a746e09A18F9187E5babEe6C60211CA728D1',
+    '0x87A5AfC8cdDa71B5054C698366E97DB2F3C2BC2f',
+    '0x9a2AdcbFb972e0EC2946A342f46895702930064F',
+    '0xd21e0fe4ba0379ec8df6263795c8120414acd0a3',
+    '0xe0268Aa6d55FfE1AA7A77587e56784e5b29004A2',
+    '0xf58d534290Ce9fc4Ea639B8b9eE238Fe83d2efA6',
+  ]
 
   const targetLTVText = '0.78';
   const targetLtv = ethers.utils.parseEther(targetLTVText);
@@ -83,9 +102,14 @@ describe('Vaults', function () {
       method: 'hardhat_impersonateAccount',
       params: [strategistAddress],
     });
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [keepers[0]],
+    });
     self = await ethers.provider.getSigner(wantHolder);
     wantWhale = await ethers.provider.getSigner(wantWhaleAddress);
     strategist = await ethers.provider.getSigner(strategistAddress);
+    keeper = await ethers.provider.getSigner(keepers[0]);
     selfAddress = await self.getAddress();
     ownerAddress = await owner.getAddress();
     console.log('addresses');
@@ -116,6 +140,7 @@ describe('Vaults', function () {
         treasuryAddress,
         [strategistAddress],
         [superAdminAddress, adminAddress, guardianAddress],
+        keepers,
         soWantAddress,
         targetLtv,
       ],
@@ -137,6 +162,8 @@ describe('Vaults', function () {
     // await want.connect(wantWhale).approve(vault.address, ethers.utils.parseEther('1000000000'));
     await want.connect(wantWhale).approve(vault.address, ethers.constants.MaxUint256);
     await want.connect(self).approve(vault.address, ethers.constants.MaxUint256);
+
+    await owner.sendTransaction({to: keepers[0], value: ethers.utils.parseEther("1.0")});
   });
 
   describe('Deploying the vault and strategy', function () {
@@ -408,7 +435,7 @@ describe('Vaults', function () {
       await vault.connect(self).deposit(toWantUnit(1000, true));
       const estimatedGas = await strategy.estimateGas.harvest();
       console.log(`estimatedGas: ${estimatedGas}`);
-      await strategy.connect(self).harvest();
+      await strategy.connect(keeper).harvest();
     });
 
     it('should provide yield', async function () {
