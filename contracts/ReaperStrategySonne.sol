@@ -69,6 +69,8 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
     uint256 public maxBorrowDepth;
     uint256 public withdrawSlippageTolerance;
 
+    bool public v2UpgradeCompleted;
+
     /**
      * @dev Initializes the strategy. Sets parameters, saves routes, and gives allowances.
      * @notice see documentation for each variable above its respective declaration.
@@ -540,10 +542,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * 4. Swaps the {USDC} token for {want}
      * 5. Deposits.
      */
-    function _harvestCore() internal override returns (uint256 callerFee) {
+    function _harvestCore() internal override returns (uint256 feeCharged) {
         _claimRewards();
         uint256 usdcGained = _swapRewardsToUsdc();
-        callerFee = _chargeFees(usdcGained);
+        feeCharged = _chargeFees(usdcGained);
         _swapToWant();
         deposit();
     }
@@ -594,14 +596,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Core harvest function.
      * Charges fees based on the amount of USDC gained from reward
      */
-    function _chargeFees(uint256 usdcGained) internal returns (uint256 callFeeToUser) {
-        uint256 usdcFee = (usdcGained * totalFee) / PERCENT_DIVISOR;
-        if (usdcFee != 0) {
-            callFeeToUser = (usdcFee * callFee) / PERCENT_DIVISOR;
-            uint256 treasuryFeeToVault = (usdcFee * treasuryFee) / PERCENT_DIVISOR;
-
-            IERC20Upgradeable(USDC).safeTransfer(msg.sender, callFeeToUser);
-            IERC20Upgradeable(USDC).safeTransfer(treasury, treasuryFeeToVault);
+    function _chargeFees(uint256 usdcGained) internal returns (uint256 feeCharged) {
+        feeCharged = (usdcGained * totalFee) / PERCENT_DIVISOR;
+        if (feeCharged != 0) {
+            IERC20Upgradeable(USDC).safeTransfer(treasury, feeCharged);
         }
     }
 
@@ -626,6 +624,32 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
     function _reclaimWant() internal override doUpdateBalance {
         _deleverage(type(uint256).max);
         _withdrawUnderlying(balanceOfPool);
+    }
+
+    // One-time function to modify state post-V2 upgrade
+    function completeV2Upgrade() external {
+        _atLeastRole(STRATEGIST);
+        require(!v2UpgradeCompleted, "V2 upgrade has already been completed");
+        v2UpgradeCompleted = true;
+        _grantRole(KEEPER, 0x33D6cB7E91C62Dd6980F16D61e0cfae082CaBFCA);
+        _grantRole(KEEPER, 0x34Df14D42988e4Dc622e37dc318e70429336B6c5);
+        _grantRole(KEEPER, 0x36a63324edFc157bE22CF63A6Bf1C3B49a0E72C0);
+        _grantRole(KEEPER, 0x51263D56ec81B5e823e34d7665A1F505C327b014);
+        _grantRole(KEEPER, 0x5241F63D0C1f2970c45234a0F5b345036117E3C2);
+        _grantRole(KEEPER, 0x5318250BD0b44D1740f47a5b6BE4F7fD5042682D);
+        _grantRole(KEEPER, 0x55a078AFC2e20C8c20d1aa4420710d827Ee494d4);
+        _grantRole(KEEPER, 0x73C882796Ea481fe0A2B8DE499d95e60ff971663);
+        _grantRole(KEEPER, 0x7B540a4D24C906E5fB3d3EcD0Bb7B1aEd3823897);
+        _grantRole(KEEPER, 0x8456a746e09A18F9187E5babEe6C60211CA728D1);
+        _grantRole(KEEPER, 0x87A5AfC8cdDa71B5054C698366E97DB2F3C2BC2f);
+        _grantRole(KEEPER, 0x9a2AdcbFb972e0EC2946A342f46895702930064F);
+        _grantRole(KEEPER, 0xd21E0fE4ba0379Ec8DF6263795c8120414Acd0A3);
+        _grantRole(KEEPER, 0xe0268Aa6d55FfE1AA7A77587e56784e5b29004A2);
+        _grantRole(KEEPER, 0xf58d534290Ce9fc4Ea639B8b9eE238Fe83d2efA6);
+        _grantRole(KEEPER, 0xCcb4f4B05739b6C62D9663a5fA7f1E2693048019);
+        securityFee = 0;
+        callFee = 0;
+        treasuryFee = PERCENT_DIVISOR;
     }
 
     /**
