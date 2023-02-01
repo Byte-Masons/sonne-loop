@@ -1,54 +1,18 @@
-const tusdProxy = '';
-const options = { gasPrice: 1000000000000 };
-const targetLTV = ethers.utils.parseEther('0.72');
-
-const getStrategy = async () => {
-  const Strategy = await ethers.getContractFactory('ReaperStrategySonne');
-  const strategy = Strategy.attach(tusdProxy);
-  return strategy;
-};
-
-const upgradeProxy = async () => {
-  const stratFactory = await ethers.getContractFactory('ReaperStrategySonne');
-  await hre.upgrades.upgradeProxy(tusdProxy, stratFactory, { ...options, timeout: 0 });
-  console.log('upgradeProxy');
-};
-
-const clearUpgradeCooldown = async () => {
-  const strategy = await getStrategy();
-  await strategy.clearUpgradeCooldown(options);
-  console.log('clearUpgradeCooldown');
-};
-
-const setSlippage = async () => {
-  const strategy = await getStrategy();
-  await strategy.setWithdrawSlippageTolerance(50, options);
-  console.log('setSlippage');
-};
-
-const unpause = async () => {
-  const strategy = await getStrategy();
-  await strategy.unpause(options);
-  console.log('unpause');
-};
-
-const setTargetLTV = async () => {
-  const strategy = await getStrategy();
-  await strategy.setTargetLtv(targetLTV, options);
-  console.log('setTargetLTV');
-};
+const {ethers, upgrades} = require('hardhat');
 
 async function main() {
-  await upgradeProxy();
-  //await clearUpgradeCooldown();
-  //await setSlippage();
-  //await setTargetLTV();
-  //await unpause();
+  const strategyAddress = '0x071A922d81d604617AD5276479146bF9d7105EFC';
+  const StrategyV2 = await ethers.getContractFactory('ReaperStrategySonne');
+  const newImplAddress = await upgrades.prepareUpgrade(strategyAddress, StrategyV2, {
+    timeout: 0,
+    kind: 'uups',
+  });
+  console.log(newImplAddress);
 }
 
 main()
   .then(() => process.exit(0))
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
     process.exit(1);
   });
