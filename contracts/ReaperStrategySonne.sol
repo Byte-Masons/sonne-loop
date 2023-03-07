@@ -138,7 +138,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3, ILeverageable {
      * depends on the cWant being updated to be accurate.
      * Does not update in order provide a view function for LTV.
      */
-    function calculateLTV() external view returns (uint256 ltv) {
+    function calculateLTV() public view returns (uint256 ltv) {
         (, uint256 cWantBalance, uint256 borrowed, uint256 exchangeRate) = cWant.getAccountSnapshot(address(this));
 
         uint256 supplied = (cWantBalance * exchangeRate) / MANTISSA;
@@ -200,6 +200,30 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3, ILeverageable {
         if (triggerHarvest) {
             harvest();
         }
+    }
+
+    /**
+     * @dev Returns the current state of the strategy in terms of leverage params.
+     *      If all is working as intended, targetLeverage <= realLeverage <= maxLeverage.
+     *      Ideally realLeverage is very close to targetLeverage. The units of the return
+     *      values will vary from strategy to strategy: some strategies may use basis points,
+     *      others may use ether precision.
+     * @return realLeverage the current leverage calculated using real loan values
+     * @return targetLeverage the current value of targetLeverage set within the strategy
+     * @return maxLeverage the current value of maxLeverage set within the strategy
+     */
+    function getCurrentLeverageSnapshot()
+        external
+        view
+        returns (
+            uint256 realLeverage,
+            uint256 targetLeverage,
+            uint256 maxLeverage
+        )
+    {
+        realLeverage = calculateLTV();
+        targetLeverage = targetLTV;
+        maxLeverage = targetLTV + allowedLTVDrift;
     }
 
     /**
