@@ -3,6 +3,7 @@
 import './abstract/ReaperBaseStrategyv3.sol';
 import './interfaces/CErc20I.sol';
 import './interfaces/IComptroller.sol';
+import './interfaces/ILeverageable.sol';
 import './interfaces/IVeloRouter.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
 
@@ -11,7 +12,7 @@ pragma solidity 0.8.11;
 /**
  * @dev This strategy will deposit and leverage a token on Sonne to maximize yield by farming reward tokens
  */
-contract ReaperStrategySonne is ReaperBaseStrategyv3 {
+contract ReaperStrategySonne is ReaperBaseStrategyv3, ILeverageable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
@@ -137,7 +138,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * depends on the cWant being updated to be accurate.
      * Does not update in order provide a view function for LTV.
      */
-    function calculateLTV() external view returns (uint256 ltv) {
+    function calculateLTV() public view returns (uint256 ltv) {
         (, uint256 cWantBalance, uint256 borrowed, uint256 exchangeRate) = cWant.getAccountSnapshot(address(this));
 
         uint256 supplied = (cWantBalance * exchangeRate) / MANTISSA;
@@ -179,6 +180,50 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         require(collateralFactorMantissa > _ltv + allowedLTVDrift);
         require(_ltv <= (collateralFactorMantissa * LTV_SAFETY_ZONE) / MANTISSA);
         targetLTV = _ltv;
+    }
+
+    /**
+     * @dev This function is designed to be called by a keeper to set the desired
+     *      leverage params within the strategy. The units of the parameters may vary
+     *      from strategy to strategy: some strategies may use basis points, others may
+     *      use ether precision. Moreover, not all parameters will apply to all strategies.
+     *      Strategies are free to ignore parameters they don't care about.
+     * @param targetLeverage the leverage/ltv to target
+     * @param triggerHarvest whether to call the harvest function at the end
+     */
+    function setLeverage(
+        uint256 targetLeverage,
+        uint256,
+        bool triggerHarvest
+    ) external {
+        setTargetLtv(targetLeverage);
+        if (triggerHarvest) {
+            harvest();
+        }
+    }
+
+    /**
+     * @dev Returns the current state of the strategy in terms of leverage params.
+     *      If all is working as intended, targetLeverage <= realLeverage <= maxLeverage.
+     *      Ideally realLeverage is very close to targetLeverage. The units of the return
+     *      values will vary from strategy to strategy: some strategies may use basis points,
+     *      others may use ether precision.
+     * @return realLeverage the current leverage calculated using real loan values
+     * @return targetLeverage the current value of targetLeverage set within the strategy
+     * @return maxLeverage the current value of maxLeverage set within the strategy
+     */
+    function getCurrentLeverageSnapshot()
+        external
+        view
+        returns (
+            uint256 realLeverage,
+            uint256 targetLeverage,
+            uint256 maxLeverage
+        )
+    {
+        realLeverage = calculateLTV();
+        targetLeverage = targetLTV;
+        maxLeverage = targetLTV + allowedLTVDrift;
     }
 
     /**
@@ -572,6 +617,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
             bool useStable;
             for (uint256 i = 0; i < routes.length; i++) {
                 (output, useStable) = router.getAmountOut(prevRouteOutput, _path[i], _path[i + 1]);
+                // if output at any hop is 0, this function becomes no-op
+                if (output == 0) {
+                    return;
+                }
                 routes[i] = IVeloRouter.route({ from: _path[i], to: _path[i + 1], stable: useStable });
                 prevRouteOutput = output;
             }

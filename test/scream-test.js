@@ -44,7 +44,7 @@ describe('Vaults', function () {
   const soWantAddress = '0x5Ff29E4470799b982408130EFAaBdeeAE7f66a10';
   const wantAddress = '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58';
 
-  const wantHolder = '0x07f82CEa5770723207f8544a00023DEb8968755E';
+  const wantHolder = '0xa3f45e619cE3AAe2Fa5f8244439a66B203b78bCc';
   const wantWhaleAddress = '0xEBb8EA128BbdFf9a1780A4902A9380022371d466';
   const strategistAddress = '0x1A20D7A31e5B3Bc5f02c8A146EF6f394502a10c4';
 
@@ -412,7 +412,7 @@ describe('Vaults', function () {
         await moveTimeForward(timeToSkip);
       const estimatedGas = await strategy.estimateGas.harvest();
       console.log(`estimatedGas: ${estimatedGas}`);
-      await strategy.connect(self).harvest();
+      await strategy.harvest();
     });
 
     it('should provide yield', async function () {
