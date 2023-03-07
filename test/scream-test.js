@@ -408,7 +408,7 @@ describe('Vaults', function () {
       await vault.connect(self).deposit(toWantUnit(1000, true));
       const estimatedGas = await strategy.estimateGas.harvest();
       console.log(`estimatedGas: ${estimatedGas}`);
-      await strategy.connect(self).harvest();
+      await strategy.harvest();
     });
 
     it('should provide yield', async function () {
