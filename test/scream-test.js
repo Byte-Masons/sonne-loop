@@ -44,8 +44,8 @@ describe('Vaults', function () {
   const soWantAddress = '0xf7B5965f5C117Eb1B5450187c9DcFccc3C317e8E';
   const wantAddress = '0x4200000000000000000000000000000000000006';
 
-  const wantWhaleAddress = '0x0a61e7D0fC8190E8b6B8D206E38B96e3bb7e7949';
-  const wantHolder = '0x00dEe1F836998bcc736022f314dF906588d44808';
+  const wantWhaleAddress = '0xD9a1Ed9AAC149bf9bD655F9b9DdECF9bD04316b3';
+  const wantHolder = '0x428AB2BA90Eba0a4Be7aF34C9Ac451ab061AC010';
   const strategistAddress = '0x1A20D7A31e5B3Bc5f02c8A146EF6f394502a10c4';
 
   const superAdminAddress = '0x9BC776dBb134Ef9D7014dB1823Cd755Ac5015203';
@@ -408,7 +408,7 @@ describe('Vaults', function () {
       await vault.connect(self).deposit(toWantUnit('10'));
       const estimatedGas = await strategy.estimateGas.harvest();
       console.log(`estimatedGas: ${estimatedGas}`);
-      await strategy.connect(self).harvest();
+      await strategy.harvest();
     });
 
     it('should provide yield', async function () {

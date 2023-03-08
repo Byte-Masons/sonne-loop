@@ -157,8 +157,9 @@ abstract contract ReaperBaseStrategyv3 is
      * @dev harvest() function that takes care of logging. Subcontracts should
      *      override _harvestCore() and implement their specific logic in it.
      */
-    function harvest() external override whenNotPaused returns (uint256 callerFee) {
-        callerFee = _harvestCore();
+    function harvest() public override whenNotPaused returns (uint256 feeCharged) {
+        _atLeastRole(KEEPER);
+        feeCharged = _harvestCore();
 
         if (block.timestamp >= harvestLog[harvestLog.length - 1].timestamp + harvestLogCadence) {
             harvestLog.push(
