@@ -3,6 +3,7 @@
 import './abstract/ReaperBaseStrategyv3.sol';
 import './interfaces/CErc20I.sol';
 import './interfaces/IComptroller.sol';
+import './interfaces/ILeverageable.sol';
 import './interfaces/IVeloRouter.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
 
@@ -11,7 +12,7 @@ pragma solidity 0.8.11;
 /**
  * @dev This strategy will deposit and leverage a token on Sonne to maximize yield by farming reward tokens
  */
-contract ReaperStrategySonne is ReaperBaseStrategyv3 {
+contract ReaperStrategySonne is ReaperBaseStrategyv3, ILeverageable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
@@ -68,6 +69,8 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
     uint256 public minWantToLeverage;
     uint256 public maxBorrowDepth;
     uint256 public withdrawSlippageTolerance;
+
+    bool public v2UpgradeCompleted;
 
     /**
      * @dev Initializes the strategy. Sets parameters, saves routes, and gives allowances.
@@ -135,7 +138,7 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * depends on the cWant being updated to be accurate.
      * Does not update in order provide a view function for LTV.
      */
-    function calculateLTV() external view returns (uint256 ltv) {
+    function calculateLTV() public view returns (uint256 ltv) {
         (, uint256 cWantBalance, uint256 borrowed, uint256 exchangeRate) = cWant.getAccountSnapshot(address(this));
 
         uint256 supplied = (cWantBalance * exchangeRate) / MANTISSA;
@@ -177,6 +180,50 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
         require(collateralFactorMantissa > _ltv + allowedLTVDrift);
         require(_ltv <= (collateralFactorMantissa * LTV_SAFETY_ZONE) / MANTISSA);
         targetLTV = _ltv;
+    }
+
+    /**
+     * @dev This function is designed to be called by a keeper to set the desired
+     *      leverage params within the strategy. The units of the parameters may vary
+     *      from strategy to strategy: some strategies may use basis points, others may
+     *      use ether precision. Moreover, not all parameters will apply to all strategies.
+     *      Strategies are free to ignore parameters they don't care about.
+     * @param targetLeverage the leverage/ltv to target
+     * @param triggerHarvest whether to call the harvest function at the end
+     */
+    function setLeverage(
+        uint256 targetLeverage,
+        uint256,
+        bool triggerHarvest
+    ) external {
+        setTargetLtv(targetLeverage);
+        if (triggerHarvest) {
+            harvest();
+        }
+    }
+
+    /**
+     * @dev Returns the current state of the strategy in terms of leverage params.
+     *      If all is working as intended, targetLeverage <= realLeverage <= maxLeverage.
+     *      Ideally realLeverage is very close to targetLeverage. The units of the return
+     *      values will vary from strategy to strategy: some strategies may use basis points,
+     *      others may use ether precision.
+     * @return realLeverage the current leverage calculated using real loan values
+     * @return targetLeverage the current value of targetLeverage set within the strategy
+     * @return maxLeverage the current value of maxLeverage set within the strategy
+     */
+    function getCurrentLeverageSnapshot()
+        external
+        view
+        returns (
+            uint256 realLeverage,
+            uint256 targetLeverage,
+            uint256 maxLeverage
+        )
+    {
+        realLeverage = calculateLTV();
+        targetLeverage = targetLTV;
+        maxLeverage = targetLTV + allowedLTVDrift;
     }
 
     /**
@@ -540,10 +587,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * 4. Swaps the {USDC} token for {want}
      * 5. Deposits.
      */
-    function _harvestCore() internal override returns (uint256 callerFee) {
+    function _harvestCore() internal override returns (uint256 feeCharged) {
         _claimRewards();
         _swapRewardsToUsdc();
-        callerFee = _chargeFees();
+        feeCharged = _chargeFees();
         _swapToWant();
         deposit();
     }
@@ -570,6 +617,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
             bool useStable;
             for (uint256 i = 0; i < routes.length; i++) {
                 (output, useStable) = router.getAmountOut(prevRouteOutput, _path[i], _path[i + 1]);
+                // if output at any hop is 0, this function becomes no-op
+                if (output == 0) {
+                    return;
+                }
                 routes[i] = IVeloRouter.route({ from: _path[i], to: _path[i + 1], stable: useStable });
                 prevRouteOutput = output;
             }
@@ -591,14 +642,10 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
      * @dev Core harvest function.
      * Charges fees based on the amount of USDC gained from reward
      */
-    function _chargeFees() internal returns (uint256 callFeeToUser) {
-        uint256 usdcFee = (IERC20Upgradeable(USDC).balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
-        if (usdcFee != 0) {
-            callFeeToUser = (usdcFee * callFee) / PERCENT_DIVISOR;
-            uint256 treasuryFeeToVault = (usdcFee * treasuryFee) / PERCENT_DIVISOR;
-
-            IERC20Upgradeable(USDC).safeTransfer(msg.sender, callFeeToUser);
-            IERC20Upgradeable(USDC).safeTransfer(treasury, treasuryFeeToVault);
+    function _chargeFees() internal returns (uint256 feeCharged) {
+        feeCharged = (IERC20Upgradeable(USDC).balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
+        if (feeCharged != 0) {
+            IERC20Upgradeable(USDC).safeTransfer(treasury, feeCharged);
         }
     }
 
@@ -623,6 +670,32 @@ contract ReaperStrategySonne is ReaperBaseStrategyv3 {
     function _reclaimWant() internal override doUpdateBalance {
         _deleverage(type(uint256).max);
         _withdrawUnderlying(balanceOfPool);
+    }
+
+    // One-time function to modify state post-V2 upgrade
+    function completeV2Upgrade() external {
+        _atLeastRole(STRATEGIST);
+        require(!v2UpgradeCompleted, "V2 upgrade has already been completed");
+        v2UpgradeCompleted = true;
+        _grantRole(KEEPER, 0x33D6cB7E91C62Dd6980F16D61e0cfae082CaBFCA);
+        _grantRole(KEEPER, 0x34Df14D42988e4Dc622e37dc318e70429336B6c5);
+        _grantRole(KEEPER, 0x36a63324edFc157bE22CF63A6Bf1C3B49a0E72C0);
+        _grantRole(KEEPER, 0x51263D56ec81B5e823e34d7665A1F505C327b014);
+        _grantRole(KEEPER, 0x5241F63D0C1f2970c45234a0F5b345036117E3C2);
+        _grantRole(KEEPER, 0x5318250BD0b44D1740f47a5b6BE4F7fD5042682D);
+        _grantRole(KEEPER, 0x55a078AFC2e20C8c20d1aa4420710d827Ee494d4);
+        _grantRole(KEEPER, 0x73C882796Ea481fe0A2B8DE499d95e60ff971663);
+        _grantRole(KEEPER, 0x7B540a4D24C906E5fB3d3EcD0Bb7B1aEd3823897);
+        _grantRole(KEEPER, 0x8456a746e09A18F9187E5babEe6C60211CA728D1);
+        _grantRole(KEEPER, 0x87A5AfC8cdDa71B5054C698366E97DB2F3C2BC2f);
+        _grantRole(KEEPER, 0x9a2AdcbFb972e0EC2946A342f46895702930064F);
+        _grantRole(KEEPER, 0xd21E0fE4ba0379Ec8DF6263795c8120414Acd0A3);
+        _grantRole(KEEPER, 0xe0268Aa6d55FfE1AA7A77587e56784e5b29004A2);
+        _grantRole(KEEPER, 0xf58d534290Ce9fc4Ea639B8b9eE238Fe83d2efA6);
+        _grantRole(KEEPER, 0xCcb4f4B05739b6C62D9663a5fA7f1E2693048019);
+        securityFee = 0;
+        callFee = 0;
+        treasuryFee = PERCENT_DIVISOR;
     }
 
     /**
