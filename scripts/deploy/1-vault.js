@@ -2,8 +2,8 @@ async function main() {
   const Vault = await ethers.getContractFactory('ReaperVaultv1_4');
 
   const wantAddress = '0x4200000000000000000000000000000000000006';
-  const tokenName = 'WETH Sonne Crypt';
-  const tokenSymbol = 'rf-soWETH';
+  const tokenName = 'Reaper.Farm Supply-Only WETH Sonne Crypt';
+  const tokenSymbol = 'rf-so-WETH';
   const depositFee = 0;
   const tvlCap = ethers.constants.MaxUint256;
 
